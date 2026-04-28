@@ -20,13 +20,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Ensure app draws edge to edge and respects keyboard insets
         enableEdgeToEdge()
         setContent {
             SynqTheme {
                 val navController = rememberNavController()
                 val startDestination = if (tokenManager.getToken() != null) {
-                    Screen.ChatList.route
+                    if (tokenManager.isProfileComplete()) Screen.ChatList.route else Screen.ProfileSetup.route
                 } else {
                     Screen.Auth.route
                 }

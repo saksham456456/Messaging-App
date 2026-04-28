@@ -49,7 +49,7 @@ fun ChatDetailScreen(
     }
 
     Scaffold(
-        modifier = Modifier.imePadding(), // Ensure the layout resizes with the keyboard
+        modifier = Modifier.imePadding(),
         topBar = {
             TopAppBar(
                 title = {
@@ -85,11 +85,33 @@ fun ChatDetailScreen(
                 ) {
                     items(count = messages.itemCount, key = { index -> messages[index]?.id ?: index }) { index ->
                         messages[index]?.let { message ->
-                            MessageBubble(message = message, isOwnMessage = message.senderId == currentUserId)
+                            // Determine if we need a date header above this message
+                            // Because list is reversed, "previous" item in list (index + 1) is actually the older message
+                            val showHeader = if (index < messages.itemCount - 1) {
+                                val olderMessage = messages[index + 1]
+                                olderMessage != null && !isSameDay(message.createdAt, olderMessage.createdAt)
+                            } else {
+                                true // Show header for the very first message in the chat
+                            }
+
+                            Column {
+                                if (showHeader) {
+                                    DateHeader(timestamp = message.createdAt)
+                                }
+                                MessageBubble(message = message, isOwnMessage = message.senderId == currentUserId)
+                            }
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable fun DateHeader(timestamp: Long) {
+    Box(modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant).padding(horizontal = 12.dp, vertical = 4.dp)) {
+            Text(text = formatHeaderDate(timestamp), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
