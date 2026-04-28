@@ -1,7 +1,12 @@
 package com.synq.app.presentation.screens.chatdetail
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -26,18 +31,63 @@ import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable fun ChatDetailScreen(chatId: String, onBack: () -> Unit, viewModel: ChatDetailViewModel = hiltViewModel()) {
+@Composable
+fun ChatDetailScreen(
+    chatId: String,
+    onBack: () -> Unit,
+    viewModel: ChatDetailViewModel = hiltViewModel()
+) {
     val uiState by viewModel.uiState.collectAsState()
     val currentUserId = viewModel.getCurrentUserId()
     val messages = viewModel.messages.collectAsLazyPagingItems()
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(messages.itemCount) {
+        if (messages.itemCount > 0 && listState.firstVisibleItemIndex == 0) {
+            listState.animateScrollToItem(0)
+        }
+    }
+
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Chat", fontWeight = FontWeight.Bold) }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface, titleContentColor = MaterialTheme.colorScheme.onSurface)) },
-        bottomBar = { ChatInputBar(inputText = uiState.inputText, onInputChanged = viewModel::updateInput, onSend = viewModel::sendMessage, isSending = uiState.isSending) }
+        modifier = Modifier.imePadding(), // Ensure the layout resizes with the keyboard
+        topBar = {
+            TopAppBar(
+                title = {
+                    Column {
+                        Text("Chat", fontWeight = FontWeight.Bold)
+                        AnimatedVisibility(visible = uiState.isSomeoneTyping, enter = fadeIn(), exit = fadeOut()) {
+                            Text("typing...", style = MaterialTheme.typography.labelSmall, color = TealAccent)
+                        }
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface, titleContentColor = MaterialTheme.colorScheme.onSurface)
+            )
+        },
+        bottomBar = {
+            ChatInputBar(inputText = uiState.inputText, onInputChanged = viewModel::updateInput, onSend = viewModel::sendMessage, isSending = uiState.isSending)
+        },
+        contentWindowInsets = WindowInsets.systemBars
     ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            LazyColumn(modifier = Modifier.fillMaxSize(), reverseLayout = true, contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)) {
-                items(count = messages.itemCount, key = { index -> messages[index]?.id ?: index }) { index ->
-                    messages[index]?.let { message -> MessageBubble(message = message, isOwnMessage = message.senderId == currentUserId) }
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(bottom = 8.dp)) {
+            if (messages.itemCount == 0) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("Say Hi!", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            } else {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    reverseLayout = true,
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    items(count = messages.itemCount, key = { index -> messages[index]?.id ?: index }) { index ->
+                        messages[index]?.let { message ->
+                            MessageBubble(message = message, isOwnMessage = message.senderId == currentUserId)
+                        }
+                    }
                 }
             }
         }
@@ -65,7 +115,7 @@ import java.util.Locale
 
 @Composable fun ChatInputBar(inputText: String, onInputChanged: (String) -> Unit, onSend: () -> Unit, isSending: Boolean) {
     Surface(color = MaterialTheme.colorScheme.surface, tonalElevation = 2.dp) {
-        Row(modifier = Modifier.fillMaxWidth().padding(8.dp, 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             TextField(value = inputText, onValueChange = onInputChanged, modifier = Modifier.weight(1f).clip(RoundedCornerShape(24.dp)), placeholder = { Text("Message") }, colors = TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent, disabledIndicatorColor = Color.Transparent), maxLines = 4)
             Spacer(modifier = Modifier.width(8.dp))
             IconButton(onClick = onSend, enabled = inputText.isNotBlank() && !isSending, modifier = Modifier.size(48.dp).clip(RoundedCornerShape(24.dp)).background(TealAccent)) { Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = Color.White) }

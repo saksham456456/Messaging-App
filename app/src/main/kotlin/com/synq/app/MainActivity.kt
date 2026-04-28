@@ -1,7 +1,9 @@
 package com.synq.app
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.navigation.compose.rememberNavController
 import com.synq.app.core.network.TokenManager
 import com.synq.app.core.theme.SynqTheme
@@ -18,6 +20,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Ensure app draws edge to edge and respects keyboard insets
+        enableEdgeToEdge()
         setContent {
             SynqTheme {
                 val navController = rememberNavController()

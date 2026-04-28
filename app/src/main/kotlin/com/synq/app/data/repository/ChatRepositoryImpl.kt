@@ -15,8 +15,10 @@ import com.synq.app.data.remote.dto.SendMessageRequestDto
 import com.synq.app.domain.model.Chat
 import com.synq.app.domain.model.Message
 import com.synq.app.domain.repository.ChatRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import java.util.UUID
 import javax.inject.Inject
 
@@ -31,11 +33,10 @@ class ChatRepositoryImpl @Inject constructor(
 
     override fun getMessages(chatId: String): Flow<PagingData<Message>> = Pager(PagingConfig(pageSize = 50)) { messageDao.getMessagesForChat(chatId) }.flow.map { it.map { m -> m.toDomain() } }
 
-    override suspend fun sendMessage(chatId: String, content: String): Result<Unit> {
+    override suspend fun sendMessage(chatId: String, content: String): Result<Unit> = withContext(Dispatchers.IO) {
         val currentUserId = tokenManager.getUserId() ?: "unknown"
         val tempMessageId = UUID.randomUUID().toString()
 
-        // Optimistic UI: Insert pending message into Room immediately
         val pendingMessage = MessageEntity(
             id = tempMessageId,
             chatId = chatId,
@@ -48,11 +49,10 @@ class ChatRepositoryImpl @Inject constructor(
         )
         messageDao.insertMessage(pendingMessage)
 
-        return try {
+        try {
             val response = chatApi.sendMessage(chatId, SendMessageRequestDto(content, "TEXT"))
             if (response.isSuccessful && response.body() != null) {
-                // Replace pending message with real server confirmed message
-                messageDao.clearMessages(tempMessageId) // Assuming we added a specific delete by id, but lets just delete the pending one. For safety, we will just delete the pending one and insert the new one
+                messageDao.clearMessages(tempMessageId) // delete pending
                 messageDao.insertMessage(response.body()!!.toEntity(isPending = false))
                 Result.success(Unit)
             } else {
@@ -65,7 +65,7 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun syncChats() {
+    override suspend fun syncChats() = withContext(Dispatchers.IO) {
         try {
             val response = chatApi.getChats(1, 50)
             if (response.isSuccessful && response.body() != null) {
