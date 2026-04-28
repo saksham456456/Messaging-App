@@ -78,16 +78,20 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun syncChats() = withContext(Dispatchers.IO) {
+    override suspend fun syncChats(): Unit = withContext(Dispatchers.IO) {
         try {
             val response = chatApi.getChats(1, 50)
             if (response.isSuccessful && response.body() != null) {
                 val chats = response.body()!!
                 chatDao.insertChats(chats.map { it.toEntity() })
                 val msgs = chats.mapNotNull { it.lastMessage?.toEntity() }
-                if (msgs.isNotEmpty()) messageDao.insertMessages(msgs)
+                if (msgs.isNotEmpty()) {
+                    messageDao.insertMessages(msgs)
+                }
             }
-        } catch (e: Exception) {}
+        } catch (e: Exception) {
+            android.util.Log.e("ChatRepository", "Sync failed", e)
+        }
     }
 
     override suspend fun createChat(phoneNumber: String): Result<String> = withContext(Dispatchers.IO) {

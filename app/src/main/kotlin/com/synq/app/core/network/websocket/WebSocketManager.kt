@@ -4,7 +4,9 @@ import android.util.Log
 import com.squareup.moshi.Moshi
 import com.synq.app.core.network.TokenManager
 import com.synq.app.data.local.dao.MessageDao
-import com.synq.app.data.remote.dto.MessageDto
+import com.synq.app.data.remote.dto.WsBasePayload
+import com.synq.app.data.remote.dto.WsMessagePayload
+import com.synq.app.data.remote.dto.WsTypingPayload
 import com.synq.app.data.mapper.toEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,7 +22,8 @@ class WebSocketManager @Inject constructor(
     private val client: OkHttpClient,
     private val moshi: Moshi,
     private val tokenManager: TokenManager,
-    private val messageDao: MessageDao
+    private val messageDao: MessageDao,
+    private val typingManager: TypingManager
 ) {
 
     private var webSocket: WebSocket? = null
@@ -39,7 +42,7 @@ class WebSocketManager @Inject constructor(
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 super.onOpen(webSocket, response)
                 Log.d("WebSocket", "Connected")
-                reconnectJob?.cancel() // Cancel any pending reconnects
+                reconnectJob?.cancel()
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
@@ -64,11 +67,10 @@ class WebSocketManager @Inject constructor(
 
     private fun scheduleReconnect() {
         if (isIntentionallyDisconnected) return
-
         reconnectJob?.cancel()
         reconnectJob = scope.launch {
             Log.d("WebSocket", "Attempting reconnect in 5 seconds...")
-            delay(5000) // Simple 5 second delay. A real app would use exponential backoff.
+            delay(5000)
             connect()
         }
     }
@@ -83,13 +85,25 @@ class WebSocketManager @Inject constructor(
     private fun handleIncomingMessage(text: String) {
         scope.launch {
             try {
-                val adapter = moshi.adapter(MessageDto::class.java)
-                val messageDto = adapter.fromJson(text)
-                if (messageDto != null) {
-                    messageDao.insertMessage(messageDto.toEntity(isPending = false))
+                val baseAdapter = moshi.adapter(WsBasePayload::class.java)
+                val base = baseAdapter.fromJson(text) ?: return@launch
+
+                when (base.type) {
+                    "NEW_MESSAGE" -> {
+                        val msgPayload = moshi.adapter(WsMessagePayload::class.java).fromJson(text)
+                        msgPayload?.message?.let {
+                            messageDao.insertMessage(it.toEntity(isPending = false))
+                        }
+                    }
+                    "TYPING" -> {
+                        val typingPayload = moshi.adapter(WsTypingPayload::class.java).fromJson(text)
+                        typingPayload?.let {
+                            typingManager.setTyping(it.chatId, it.userId, it.isTyping)
+                        }
+                    }
                 }
             } catch (e: Exception) {
-                Log.e("WebSocket", "Failed to parse message", e)
+                Log.e("WebSocket", "Failed to parse message payload", e)
             }
         }
     }
