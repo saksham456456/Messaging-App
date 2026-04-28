@@ -1,5 +1,7 @@
 package com.synq.app.data.repository
+
 import com.synq.app.core.network.TokenManager
+import com.synq.app.core.network.toUserFriendlyMessage
 import com.synq.app.core.result.AppResult
 import com.synq.app.data.remote.api.AuthApi
 import com.synq.app.data.remote.api.UserApi
@@ -16,8 +18,18 @@ class AuthRepositoryImpl @Inject constructor(
     private val userApi: UserApi,
     private val tokenManager: TokenManager
 ) : AuthRepository {
+
     override suspend fun requestOtp(phoneNumber: String): AppResult<Boolean> = withContext(Dispatchers.IO) {
-        try { val response = authApi.requestOtp(OtpRequestDto(phoneNumber)); if (response.isSuccessful) AppResult.Success(response.body()?.success ?: false) else AppResult.Error("Failed: ${response.message()}") } catch (e: Exception) { AppResult.Error(e.message ?: "Network error", e) }
+        try {
+            val response = authApi.requestOtp(OtpRequestDto(phoneNumber))
+            if (response.isSuccessful) {
+                AppResult.Success(response.body()?.success ?: false)
+            } else {
+                AppResult.Error("Failed: ${response.message()}")
+            }
+        } catch (e: Exception) {
+            AppResult.Error(e.toUserFriendlyMessage(), e)
+        }
     }
 
     override suspend fun verifyOtp(phoneNumber: String, otp: String): AppResult<Unit> = withContext(Dispatchers.IO) {
@@ -27,14 +39,14 @@ class AuthRepositoryImpl @Inject constructor(
                 val body = response.body()!!
                 tokenManager.saveToken(body.accessToken)
                 tokenManager.saveUserId(body.userId)
-
-                // Real app: The backend might return whether profile is complete here.
-                // Assuming false for now so user goes to profile setup flow.
                 tokenManager.setProfileComplete(false)
-
                 AppResult.Success(Unit)
-            } else AppResult.Error("Failed: ${response.message()}")
-        } catch (e: Exception) { AppResult.Error(e.message ?: "Network error", e) }
+            } else {
+                AppResult.Error("Failed: ${response.message()}")
+            }
+        } catch (e: Exception) {
+            AppResult.Error(e.toUserFriendlyMessage(), e)
+        }
     }
 
     override suspend fun updateProfile(name: String): AppResult<Unit> = withContext(Dispatchers.IO) {
@@ -47,7 +59,7 @@ class AuthRepositoryImpl @Inject constructor(
                 AppResult.Error("Failed to save profile: ${response.message()}")
             }
         } catch (e: Exception) {
-            AppResult.Error(e.message ?: "Network error", e)
+            AppResult.Error(e.toUserFriendlyMessage(), e)
         }
     }
 

@@ -5,6 +5,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
 import com.synq.app.core.network.TokenManager
+import com.synq.app.core.network.toUserFriendlyMessage
 import com.synq.app.data.local.dao.ChatDao
 import com.synq.app.data.local.dao.MessageDao
 import com.synq.app.data.local.entity.MessageEntity
@@ -12,6 +13,7 @@ import com.synq.app.data.mapper.toDomain
 import com.synq.app.data.mapper.toEntity
 import com.synq.app.data.remote.api.ChatApi
 import com.synq.app.data.remote.dto.SendMessageRequestDto
+import com.synq.app.data.remote.dto.CreateChatRequestDto
 import com.synq.app.domain.model.Chat
 import com.synq.app.domain.model.Message
 import com.synq.app.domain.repository.ChatRepository
@@ -57,11 +59,11 @@ class ChatRepositoryImpl @Inject constructor(
                 Result.success(Unit)
             } else {
                 messageDao.updateMessageStatus(tempMessageId, "FAILED")
-                Result.failure(Exception("Failed: \${response.message()}"))
+                Result.failure(Exception("Failed: ${response.message()}"))
             }
         } catch (e: Exception) {
             messageDao.updateMessageStatus(tempMessageId, "FAILED")
-            Result.failure(e)
+            Result.failure(Exception(e.toUserFriendlyMessage()))
         }
     }
 
@@ -74,6 +76,22 @@ class ChatRepositoryImpl @Inject constructor(
                 val msgs = chats.mapNotNull { it.lastMessage?.toEntity() }
                 if (msgs.isNotEmpty()) messageDao.insertMessages(msgs)
             }
-        } catch (e: Exception) {}
+        } catch (e: Exception) {
+        }
+    }
+
+    override suspend fun createChat(phoneNumber: String): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val response = chatApi.createChat(CreateChatRequestDto(phoneNumber))
+            if (response.isSuccessful && response.body() != null) {
+                val newChat = response.body()!!
+                chatDao.insertChat(newChat.toEntity())
+                Result.success(newChat.id)
+            } else {
+                Result.failure(Exception("Failed to start chat: ${response.message()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception(e.toUserFriendlyMessage()))
+        }
     }
 }

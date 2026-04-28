@@ -1,9 +1,12 @@
 package com.synq.app.presentation.screens.chatlist
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -17,10 +20,29 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.synq.app.domain.model.Chat
+
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable fun ChatListScreen(viewModel: ChatListViewModel = hiltViewModel(), onChatClick: (String) -> Unit) {
+@Composable
+fun ChatListScreen(
+    viewModel: ChatListViewModel = hiltViewModel(),
+    onChatClick: (String) -> Unit,
+    onNewChatClick: () -> Unit
+) {
     val chatsPagingItems = viewModel.chats.collectAsLazyPagingItems()
-    Scaffold(topBar = { TopAppBar(title = { Text("Synq", fontWeight = FontWeight.Bold) }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface, titleContentColor = MaterialTheme.colorScheme.onSurface)) }) { paddingValues ->
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Synq", fontWeight = FontWeight.Bold) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface, titleContentColor = MaterialTheme.colorScheme.onSurface)
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = onNewChatClick, containerColor = MaterialTheme.colorScheme.primary) {
+                Icon(Icons.Filled.Add, contentDescription = "New Chat")
+            }
+        }
+    ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(count = chatsPagingItems.itemCount, key = { index -> chatsPagingItems[index]?.id ?: index }) { index ->
@@ -39,6 +61,7 @@ import com.synq.app.domain.model.Chat
         }
     }
 }
+
 @Composable fun ChatItem(chat: Chat, onClick: () -> Unit) {
     Row(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(16.dp, 12.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(modifier = Modifier.size(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)), contentAlignment = Alignment.Center) { Text(text = chat.name.firstOrNull()?.uppercase() ?: "?", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) }

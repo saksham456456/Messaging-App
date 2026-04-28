@@ -1,4 +1,5 @@
 package com.synq.app.domain.repository
+
 import androidx.paging.PagingData
 import com.synq.app.domain.model.Chat
 import com.synq.app.domain.model.Message
@@ -9,4 +10,5 @@ interface ChatRepository {
     fun getMessages(chatId: String): Flow<PagingData<Message>>
     suspend fun sendMessage(chatId: String, content: String): Result<Unit>
     suspend fun syncChats()
+    suspend fun createChat(phoneNumber: String): Result<String> // Returns new chatId
 }
