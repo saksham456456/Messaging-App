@@ -1,5 +1,6 @@
 package com.synq.app.data.repository
 
+import androidx.paging.ExperimentalPagingApi
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
@@ -14,6 +15,7 @@ import com.synq.app.data.mapper.toEntity
 import com.synq.app.data.remote.api.ChatApi
 import com.synq.app.data.remote.dto.SendMessageRequestDto
 import com.synq.app.data.remote.dto.CreateChatRequestDto
+import com.synq.app.data.repository.mediator.MessageRemoteMediator
 import com.synq.app.domain.model.Chat
 import com.synq.app.domain.model.Message
 import com.synq.app.domain.repository.ChatRepository
@@ -33,7 +35,16 @@ class ChatRepositoryImpl @Inject constructor(
 
     override fun getChats(): Flow<PagingData<Chat>> = Pager(PagingConfig(pageSize = 20)) { chatDao.getChats() }.flow.map { it.map { c -> c.toDomain() } }
 
-    override fun getMessages(chatId: String): Flow<PagingData<Message>> = Pager(PagingConfig(pageSize = 50)) { messageDao.getMessagesForChat(chatId) }.flow.map { it.map { m -> m.toDomain() } }
+    @OptIn(ExperimentalPagingApi::class)
+    override fun getMessages(chatId: String): Flow<PagingData<Message>> {
+        return Pager(
+            config = PagingConfig(pageSize = 50, enablePlaceholders = false),
+            remoteMediator = MessageRemoteMediator(chatId, chatApi, messageDao),
+            pagingSourceFactory = { messageDao.getMessagesForChat(chatId) }
+        ).flow.map { pagingData ->
+            pagingData.map { it.toDomain() }
+        }
+    }
 
     override suspend fun sendMessage(chatId: String, content: String): Result<Unit> = withContext(Dispatchers.IO) {
         val currentUserId = tokenManager.getUserId() ?: "unknown"
@@ -76,8 +87,7 @@ class ChatRepositoryImpl @Inject constructor(
                 val msgs = chats.mapNotNull { it.lastMessage?.toEntity() }
                 if (msgs.isNotEmpty()) messageDao.insertMessages(msgs)
             }
-        } catch (e: Exception) {
-        }
+        } catch (e: Exception) {}
     }
 
     override suspend fun createChat(phoneNumber: String): Result<String> = withContext(Dispatchers.IO) {

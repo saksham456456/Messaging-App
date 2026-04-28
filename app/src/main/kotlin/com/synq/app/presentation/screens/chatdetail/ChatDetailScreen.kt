@@ -3,6 +3,8 @@ package com.synq.app.presentation.screens.chatdetail
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -49,7 +51,10 @@ fun ChatDetailScreen(
     }
 
     Scaffold(
-        modifier = Modifier.imePadding(),
+        // Modern IME padding modifier enabling smooth keyboard glides when combined with enableEdgeToEdge
+        modifier = Modifier
+            .imePadding()
+            .navigationBarsPadding(),
         topBar = {
             TopAppBar(
                 title = {
@@ -69,9 +74,14 @@ fun ChatDetailScreen(
         bottomBar = {
             ChatInputBar(inputText = uiState.inputText, onInputChanged = viewModel::updateInput, onSend = viewModel::sendMessage, isSending = uiState.isSending)
         },
-        contentWindowInsets = WindowInsets.systemBars
+        contentWindowInsets = WindowInsets.systemBars // Scaffold handles top insets natively
     ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(bottom = 8.dp)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .consumeWindowInsets(paddingValues) // Consume insets so child doesn't double-pad
+        ) {
             if (messages.itemCount == 0) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("Say Hi!", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -85,13 +95,11 @@ fun ChatDetailScreen(
                 ) {
                     items(count = messages.itemCount, key = { index -> messages[index]?.id ?: index }) { index ->
                         messages[index]?.let { message ->
-                            // Determine if we need a date header above this message
-                            // Because list is reversed, "previous" item in list (index + 1) is actually the older message
                             val showHeader = if (index < messages.itemCount - 1) {
                                 val olderMessage = messages[index + 1]
                                 olderMessage != null && !isSameDay(message.createdAt, olderMessage.createdAt)
                             } else {
-                                true // Show header for the very first message in the chat
+                                true
                             }
 
                             Column {
@@ -137,10 +145,31 @@ fun ChatDetailScreen(
 
 @Composable fun ChatInputBar(inputText: String, onInputChanged: (String) -> Unit, onSend: () -> Unit, isSending: Boolean) {
     Surface(color = MaterialTheme.colorScheme.surface, tonalElevation = 2.dp) {
-        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            TextField(value = inputText, onValueChange = onInputChanged, modifier = Modifier.weight(1f).clip(RoundedCornerShape(24.dp)), placeholder = { Text("Message") }, colors = TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent, disabledIndicatorColor = Color.Transparent), maxLines = 4)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.Bottom // Align to bottom when field expands
+        ) {
+            TextField(
+                value = inputText,
+                onValueChange = onInputChanged,
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(24.dp))
+                    .animateContentSize(animationSpec = tween(150)), // Smooth height expansion
+                placeholder = { Text("Message") },
+                colors = TextFieldDefaults.colors(focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent, disabledIndicatorColor = Color.Transparent),
+                maxLines = 5
+            )
             Spacer(modifier = Modifier.width(8.dp))
-            IconButton(onClick = onSend, enabled = inputText.isNotBlank() && !isSending, modifier = Modifier.size(48.dp).clip(RoundedCornerShape(24.dp)).background(TealAccent)) { Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = Color.White) }
+            IconButton(
+                onClick = onSend,
+                enabled = inputText.isNotBlank() && !isSending,
+                modifier = Modifier.size(48.dp).clip(RoundedCornerShape(24.dp)).background(TealAccent)
+            ) {
+                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", tint = Color.White)
+            }
         }
     }
 }
