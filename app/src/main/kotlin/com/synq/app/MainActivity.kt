@@ -23,6 +23,8 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
     @Inject
     lateinit var tokenManager: TokenManager
 
+    // We consider the app "ready" once we've securely checked the token and biometric status
+    private var isAuthChecked = false
     private var isAuthenticated = false
     private var isBiometricPromptShowing = false
 
@@ -31,13 +33,16 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Wait until we decide if we need biometrics
-        splashScreen.setKeepOnScreenCondition { !isAuthenticated && tokenManager.getToken() != null && canAuthenticateWithBiometrics() && !isBiometricPromptShowing }
+        // Hold the native splash screen until the initial logic evaluation starts.
+        // It drops immediately to reveal the custom Compose SynqMotionSplash beneath it.
+        splashScreen.setKeepOnScreenCondition { !isAuthChecked }
 
         if (tokenManager.getToken() != null && canAuthenticateWithBiometrics()) {
             isBiometricPromptShowing = true
+            isAuthChecked = true
             showBiometricPrompt()
         } else {
+            isAuthChecked = true
             isAuthenticated = true
             loadUi()
         }
@@ -54,11 +59,11 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
                     Screen.Auth.route
                 }
 
-                // We show the custom animated splash screen if the user is naturally launching the app
                 SynqNavGraph(
                     navController = navController,
                     startDestination = targetDestination,
-                    isInitialLaunch = true
+                    isInitialLaunch = true,
+                    isAppReady = { isAuthenticated } // For our simple app, true once this block is reached
                 )
             }
         }
@@ -70,6 +75,8 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
     }
 
     private fun showBiometricPrompt() {
+        // For security, if biometrics is required, the compose splash screen spins its pulse
+        // until the prompt resolves successfully.
         val executor = ContextCompat.getMainExecutor(this)
         val biometricPrompt = BiometricPrompt(this, executor,
             object : BiometricPrompt.AuthenticationCallback() {
@@ -97,6 +104,9 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
             .setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_STRONG or BiometricManager.Authenticators.DEVICE_CREDENTIAL)
             .build()
 
+        // We call loadUi() immediately so the background Compose splash animates
+        // beneath the system dialog box!
+        loadUi()
         biometricPrompt.authenticate(promptInfo)
     }
 }
