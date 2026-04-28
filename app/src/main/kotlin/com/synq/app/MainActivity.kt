@@ -8,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.rememberNavController
 import com.synq.app.core.network.TokenManager
 import com.synq.app.core.theme.SynqTheme
@@ -23,32 +24,42 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
     lateinit var tokenManager: TokenManager
 
     private var isAuthenticated = false
+    private var isBiometricPromptShowing = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // If user has a token (is logged in), prompt biometric authentication before showing UI
+        // Wait until we decide if we need biometrics
+        splashScreen.setKeepOnScreenCondition { !isAuthenticated && tokenManager.getToken() != null && canAuthenticateWithBiometrics() && !isBiometricPromptShowing }
+
         if (tokenManager.getToken() != null && canAuthenticateWithBiometrics()) {
+            isBiometricPromptShowing = true
             showBiometricPrompt()
         } else {
-            // Either not logged in, or biometrics not available. Proceed to normal routing.
             isAuthenticated = true
             loadUi()
         }
     }
 
     private fun loadUi() {
-        if (!isAuthenticated) return // Wait until authenticated
+        if (!isAuthenticated) return
         setContent {
             SynqTheme {
                 val navController = rememberNavController()
-                val startDestination = if (tokenManager.getToken() != null) {
+                val targetDestination = if (tokenManager.getToken() != null) {
                     if (tokenManager.isProfileComplete()) Screen.ChatList.route else Screen.ProfileSetup.route
                 } else {
                     Screen.Auth.route
                 }
-                SynqNavGraph(navController = navController, startDestination = startDestination)
+
+                // We show the custom animated splash screen if the user is naturally launching the app
+                SynqNavGraph(
+                    navController = navController,
+                    startDestination = targetDestination,
+                    isInitialLaunch = true
+                )
             }
         }
     }
@@ -64,7 +75,6 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
             object : BiometricPrompt.AuthenticationCallback() {
                 override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
                     super.onAuthenticationError(errorCode, errString)
-                    // If they cancel or fail, close the app for security
                     Toast.makeText(applicationContext, "Authentication required", Toast.LENGTH_SHORT).show()
                     finish()
                 }
@@ -72,12 +82,12 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
                 override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
                     super.onAuthenticationSucceeded(result)
                     isAuthenticated = true
+                    isBiometricPromptShowing = false
                     loadUi()
                 }
 
                 override fun onAuthenticationFailed() {
                     super.onAuthenticationFailed()
-                    // Prompt handles retry internally
                 }
             })
 

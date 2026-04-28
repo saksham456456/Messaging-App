@@ -1,5 +1,6 @@
 package com.synq.app.presentation.navigation
 sealed class Screen(val route: String) {
+    object Splash : Screen("splash")
     object Auth : Screen("auth")
     object ProfileSetup : Screen("profile_setup")
     object ChatList : Screen("chat_list")

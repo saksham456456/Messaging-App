@@ -1,4 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.SynqApp" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.SynqApp" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#0B192C</item>
+    </style>
+
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <!-- Set the splash screen background -->
+        <item name="windowSplashScreenBackground">#0B192C</item>
+        <!-- Use our custom vector logo -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_synq_logo</item>
+        <!-- Specify the actual theme to switch to after the splash finishes -->
+        <item name="postSplashScreenTheme">@style/Theme.SynqApp</item>
+    </style>
 </resources>
