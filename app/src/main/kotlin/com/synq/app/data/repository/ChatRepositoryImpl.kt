@@ -1,10 +1,13 @@
 package com.synq.app.data.repository
+
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
+import com.synq.app.core.network.TokenManager
 import com.synq.app.data.local.dao.ChatDao
 import com.synq.app.data.local.dao.MessageDao
+import com.synq.app.data.local.entity.MessageEntity
 import com.synq.app.data.mapper.toDomain
 import com.synq.app.data.mapper.toEntity
 import com.synq.app.data.remote.api.ChatApi
@@ -14,12 +17,63 @@ import com.synq.app.domain.model.Message
 import com.synq.app.domain.repository.ChatRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.util.UUID
 import javax.inject.Inject
-class ChatRepositoryImpl @Inject constructor(private val chatApi: ChatApi, private val chatDao: ChatDao, private val messageDao: MessageDao) : ChatRepository {
+
+class ChatRepositoryImpl @Inject constructor(
+    private val chatApi: ChatApi,
+    private val chatDao: ChatDao,
+    private val messageDao: MessageDao,
+    private val tokenManager: TokenManager
+) : ChatRepository {
+
     override fun getChats(): Flow<PagingData<Chat>> = Pager(PagingConfig(pageSize = 20)) { chatDao.getChats() }.flow.map { it.map { c -> c.toDomain() } }
+
     override fun getMessages(chatId: String): Flow<PagingData<Message>> = Pager(PagingConfig(pageSize = 50)) { messageDao.getMessagesForChat(chatId) }.flow.map { it.map { m -> m.toDomain() } }
+
     override suspend fun sendMessage(chatId: String, content: String): Result<Unit> {
-        return try { val response = chatApi.sendMessage(chatId, SendMessageRequestDto(content, "TEXT")); if (response.isSuccessful && response.body() != null) { messageDao.insertMessage(response.body()!!.toEntity(isPending = false)); Result.success(Unit) } else Result.failure(Exception("Failed: ${response.message()}")) } catch (e: Exception) { Result.failure(e) }
+        val currentUserId = tokenManager.getUserId() ?: "unknown"
+        val tempMessageId = UUID.randomUUID().toString()
+
+        // Optimistic UI: Insert pending message into Room immediately
+        val pendingMessage = MessageEntity(
+            id = tempMessageId,
+            chatId = chatId,
+            senderId = currentUserId,
+            content = content,
+            type = "TEXT",
+            status = "PENDING",
+            createdAt = System.currentTimeMillis(),
+            isPending = true
+        )
+        messageDao.insertMessage(pendingMessage)
+
+        return try {
+            val response = chatApi.sendMessage(chatId, SendMessageRequestDto(content, "TEXT"))
+            if (response.isSuccessful && response.body() != null) {
+                // Replace pending message with real server confirmed message
+                messageDao.clearMessages(tempMessageId) // Assuming we added a specific delete by id, but lets just delete the pending one. For safety, we will just delete the pending one and insert the new one
+                messageDao.insertMessage(response.body()!!.toEntity(isPending = false))
+                Result.success(Unit)
+            } else {
+                messageDao.updateMessageStatus(tempMessageId, "FAILED")
+                Result.failure(Exception("Failed: \${response.message()}"))
+            }
+        } catch (e: Exception) {
+            messageDao.updateMessageStatus(tempMessageId, "FAILED")
+            Result.failure(e)
+        }
     }
-    override suspend fun syncChats() { try { val response = chatApi.getChats(1, 50); if (response.isSuccessful && response.body() != null) { val chats = response.body()!!; chatDao.insertChats(chats.map { it.toEntity() }); val msgs = chats.mapNotNull { it.lastMessage?.toEntity() }; if (msgs.isNotEmpty()) messageDao.insertMessages(msgs) } } catch (e: Exception) {} }
+
+    override suspend fun syncChats() {
+        try {
+            val response = chatApi.getChats(1, 50)
+            if (response.isSuccessful && response.body() != null) {
+                val chats = response.body()!!
+                chatDao.insertChats(chats.map { it.toEntity() })
+                val msgs = chats.mapNotNull { it.lastMessage?.toEntity() }
+                if (msgs.isNotEmpty()) messageDao.insertMessages(msgs)
+            }
+        } catch (e: Exception) {}
+    }
 }

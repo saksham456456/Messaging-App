@@ -21,6 +21,10 @@ import com.synq.app.domain.model.MessageStatus
 import com.synq.app.core.theme.BubbleReceived
 import com.synq.app.core.theme.BubbleSent
 import com.synq.app.core.theme.TealAccent
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable fun ChatDetailScreen(chatId: String, onBack: () -> Unit, viewModel: ChatDetailViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
@@ -39,20 +43,26 @@ import com.synq.app.core.theme.TealAccent
         }
     }
 }
+
 @Composable fun MessageBubble(message: Message, isOwnMessage: Boolean) {
     val alignment = if (isOwnMessage) Alignment.CenterEnd else Alignment.CenterStart
     val bubbleColor = if (isOwnMessage) BubbleSent else BubbleReceived
     val shape = if (isOwnMessage) RoundedCornerShape(16.dp, 16.dp, 4.dp, 16.dp) else RoundedCornerShape(16.dp, 16.dp, 16.dp, 4.dp)
+
+    val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+    val formattedTime = timeFormat.format(Date(message.createdAt))
+
     Box(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), contentAlignment = alignment) {
         Column(modifier = Modifier.widthIn(max = 280.dp).clip(shape).background(bubbleColor).padding(12.dp)) {
             Text(text = message.content, color = Color.White)
             Row(modifier = Modifier.align(Alignment.End), verticalAlignment = Alignment.CenterVertically) {
-                Text(text = "12:00", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.7f))
+                Text(text = formattedTime, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.7f))
                 if (isOwnMessage) { Spacer(modifier = Modifier.width(4.dp)); Text(text = when(message.status) { MessageStatus.PENDING -> "⏳"; MessageStatus.SENT -> "✓"; MessageStatus.DELIVERED -> "✓✓"; MessageStatus.READ -> "👀"; MessageStatus.FAILED -> "❌"; else -> "" }, style = MaterialTheme.typography.labelSmall) }
             }
         }
     }
 }
+
 @Composable fun ChatInputBar(inputText: String, onInputChanged: (String) -> Unit, onSend: () -> Unit, isSending: Boolean) {
     Surface(color = MaterialTheme.colorScheme.surface, tonalElevation = 2.dp) {
         Row(modifier = Modifier.fillMaxWidth().padding(8.dp, 8.dp), verticalAlignment = Alignment.CenterVertically) {
