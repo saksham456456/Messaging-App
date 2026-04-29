@@ -29,6 +29,7 @@ fun NewChatScreen(
     }
 
     Scaffold(
+        modifier = Modifier.imePadding().systemBarsPadding(),
         topBar = {
             TopAppBar(
                 title = { Text("New Message", fontWeight = FontWeight.Bold) },
@@ -63,7 +64,7 @@ fun NewChatScreen(
                 Button(
                     onClick = viewModel::startChat,
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !uiState.isLoading
+                    enabled = !uiState.isLoading && uiState.phoneNumber.isNotBlank()
                 ) {
                     Text("Start Chat")
                 }

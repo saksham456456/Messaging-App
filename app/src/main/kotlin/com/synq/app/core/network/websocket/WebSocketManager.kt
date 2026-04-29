@@ -3,6 +3,7 @@ package com.synq.app.core.network.websocket
 import android.util.Log
 import com.squareup.moshi.Moshi
 import com.synq.app.core.network.TokenManager
+import com.synq.app.data.local.dao.ChatDao
 import com.synq.app.data.local.dao.MessageDao
 import com.synq.app.data.remote.dto.WsBasePayload
 import com.synq.app.data.remote.dto.WsMessagePayload
@@ -23,6 +24,7 @@ class WebSocketManager @Inject constructor(
     private val moshi: Moshi,
     private val tokenManager: TokenManager,
     private val messageDao: MessageDao,
+    private val chatDao: ChatDao, // Inject ChatDao to bump chats
     private val typingManager: TypingManager
 ) {
 
@@ -93,6 +95,8 @@ class WebSocketManager @Inject constructor(
                         val msgPayload = moshi.adapter(WsMessagePayload::class.java).fromJson(text)
                         msgPayload?.message?.let {
                             messageDao.insertMessage(it.toEntity(isPending = false))
+                            // IMPORTANT: Update the chat's updatedAt so it jumps to top of Chat List
+                            chatDao.updateChatTimestamp(it.chatId, it.createdAt)
                         }
                     }
                     "TYPING" -> {
