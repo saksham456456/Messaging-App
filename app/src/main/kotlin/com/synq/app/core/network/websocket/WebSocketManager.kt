@@ -5,9 +5,7 @@ import com.synq.app.core.util.SynqLog
 import com.synq.app.core.network.TokenManager
 import com.synq.app.data.local.dao.ChatDao
 import com.synq.app.data.local.dao.MessageDao
-import com.synq.app.data.remote.dto.WsBasePayload
-import com.synq.app.data.remote.dto.WsMessagePayload
-import com.synq.app.data.remote.dto.WsTypingPayload
+import com.synq.app.data.remote.dto.WsPayload
 import com.synq.app.data.mapper.toEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -87,23 +85,17 @@ class WebSocketManager @Inject constructor(
     private fun handleIncomingMessage(text: String) {
         scope.launch {
             try {
-                val baseAdapter = moshi.adapter(WsBasePayload::class.java)
-                val base = baseAdapter.fromJson(text) ?: return@launch
+                val payload = moshi.adapter(WsPayload::class.java).fromJson(text) ?: return@launch
 
-                when (base.type) {
-                    "NEW_MESSAGE" -> {
-                        val msgPayload = moshi.adapter(WsMessagePayload::class.java).fromJson(text)
-                        msgPayload?.message?.let {
-                            messageDao.insertMessage(it.toEntity(isPending = false))
-                            // IMPORTANT: Update the chat's updatedAt so it jumps to top of Chat List
-                            chatDao.updateChatTimestamp(it.chatId, it.createdAt)
-                        }
+                when (payload) {
+                    is WsPayload.NewMessage -> {
+                        val it = payload.message
+                        messageDao.insertMessage(it.toEntity(isPending = false))
+                        // IMPORTANT: Update the chat's updatedAt so it jumps to top of Chat List
+                        chatDao.updateChatTimestamp(it.chatId, it.createdAt)
                     }
-                    "TYPING" -> {
-                        val typingPayload = moshi.adapter(WsTypingPayload::class.java).fromJson(text)
-                        typingPayload?.let {
-                            typingManager.setTyping(it.chatId, it.userId, it.isTyping)
-                        }
+                    is WsPayload.Typing -> {
+                        typingManager.setTyping(payload.chatId, payload.userId, payload.isTyping)
                     }
                 }
             } catch (e: Exception) {

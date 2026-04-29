@@ -1,6 +1,7 @@
 package com.synq.app.core.di
 import android.content.Context
 import com.squareup.moshi.Moshi
+import com.squareup.moshi.adapters.PolymorphicJsonAdapterFactory
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import com.synq.app.core.network.AuthInterceptor
 import com.synq.app.core.network.TokenManager
@@ -19,7 +20,14 @@ import javax.inject.Singleton
 @Module @InstallIn(SingletonComponent::class) object AppModule {
     @Provides @Singleton fun provideApplicationContext(@ApplicationContext context: Context): Context = context
     @Provides @Singleton fun provideIoDispatcher(): CoroutineDispatcher = Dispatchers.IO
-    @Provides @Singleton fun provideMoshi(): Moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
+    @Provides @Singleton fun provideMoshi(): Moshi = Moshi.Builder()
+        .add(
+            PolymorphicJsonAdapterFactory.of(com.synq.app.data.remote.dto.WsPayload::class.java, "type")
+                .withSubtype(com.synq.app.data.remote.dto.WsPayload.NewMessage::class.java, "NEW_MESSAGE")
+                .withSubtype(com.synq.app.data.remote.dto.WsPayload.Typing::class.java, "TYPING")
+        )
+        .add(KotlinJsonAdapterFactory())
+        .build()
     @Provides @Singleton fun provideTokenManager(@ApplicationContext context: Context): TokenManager = TokenManager(context)
     @Provides @Singleton fun provideAuthInterceptor(tokenManager: TokenManager): AuthInterceptor = AuthInterceptor(tokenManager)
     @Provides @Singleton fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
