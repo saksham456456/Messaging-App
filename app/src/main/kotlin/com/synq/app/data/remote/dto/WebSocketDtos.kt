@@ -4,20 +4,24 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
-data class WsBasePayload(
-    @Json(name = "type") val type: String
+open class WsBasePayload(
+    @Json(name = "type") open val type: String
 )
 
-@JsonClass(generateAdapter = true)
-data class WsMessagePayload(
-    @Json(name = "type") val type: String,
-    @Json(name = "message") val message: MessageDto
-)
+sealed class WsPayload : WsBasePayload("") {
+    @JsonClass(generateAdapter = true)
+    data class NewMessage(
+        @Json(name = "message") val message: MessageDto
+    ) : WsPayload() {
+        override val type: String = "NEW_MESSAGE"
+    }
 
-@JsonClass(generateAdapter = true)
-data class WsTypingPayload(
-    @Json(name = "type") val type: String,
-    @Json(name = "chatId") val chatId: String,
-    @Json(name = "userId") val userId: String,
-    @Json(name = "isTyping") val isTyping: Boolean
-)
+    @JsonClass(generateAdapter = true)
+    data class Typing(
+        @Json(name = "chatId") val chatId: String,
+        @Json(name = "userId") val userId: String,
+        @Json(name = "isTyping") val isTyping: Boolean
+    ) : WsPayload() {
+        override val type: String = "TYPING"
+    }
+}
