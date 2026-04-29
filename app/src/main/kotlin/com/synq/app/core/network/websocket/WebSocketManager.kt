@@ -1,7 +1,7 @@
 package com.synq.app.core.network.websocket
 
-import android.util.Log
 import com.squareup.moshi.Moshi
+import com.synq.app.core.util.SynqLog
 import com.synq.app.core.network.TokenManager
 import com.synq.app.data.local.dao.ChatDao
 import com.synq.app.data.local.dao.MessageDao
@@ -43,7 +43,7 @@ class WebSocketManager @Inject constructor(
         webSocket = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 super.onOpen(webSocket, response)
-                Log.d("WebSocket", "Connected")
+                SynqLog.d("WebSocket", "Connected")
                 reconnectJob?.cancel()
             }
 
@@ -54,13 +54,13 @@ class WebSocketManager @Inject constructor(
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                 super.onClosed(webSocket, code, reason)
-                Log.d("WebSocket", "Closed: $reason")
+                SynqLog.d("WebSocket", "Closed: $reason")
                 this@WebSocketManager.webSocket = null
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
                 super.onFailure(webSocket, t, response)
-                Log.e("WebSocket", "Failure: ${t.message}")
+                SynqLog.e("WebSocket", "Failure: ${t.message}")
                 this@WebSocketManager.webSocket = null
                 scheduleReconnect()
             }
@@ -71,7 +71,7 @@ class WebSocketManager @Inject constructor(
         if (isIntentionallyDisconnected) return
         reconnectJob?.cancel()
         reconnectJob = scope.launch {
-            Log.d("WebSocket", "Attempting reconnect in 5 seconds...")
+            SynqLog.d("WebSocket", "Attempting reconnect in 5 seconds...")
             delay(5000)
             connect()
         }
@@ -107,7 +107,7 @@ class WebSocketManager @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                Log.e("WebSocket", "Failed to parse message payload", e)
+                SynqLog.e("WebSocket", "Failed to parse message payload", e)
             }
         }
     }

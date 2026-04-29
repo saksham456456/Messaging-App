@@ -7,6 +7,7 @@ import androidx.paging.PagingData
 import androidx.paging.map
 import com.synq.app.core.network.TokenManager
 import com.synq.app.core.network.toUserFriendlyMessage
+import com.synq.app.core.util.SynqLog
 import com.synq.app.data.local.dao.ChatDao
 import com.synq.app.data.local.dao.MessageDao
 import com.synq.app.data.local.entity.MessageEntity
@@ -90,7 +91,7 @@ class ChatRepositoryImpl @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            android.util.Log.e("ChatRepository", "Sync failed", e)
+            SynqLog.e("ChatRepository", "Sync failed", e)
         }
     }
 
