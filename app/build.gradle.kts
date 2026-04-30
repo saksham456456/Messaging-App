@@ -70,4 +70,6 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.5.0")
     implementation("androidx.security:security-crypto-ktx:1.1.0-alpha06")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
+
+    testImplementation("junit:junit:4.13.2")
 }
