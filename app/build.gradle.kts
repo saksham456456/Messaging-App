@@ -72,5 +72,7 @@ dependencies {
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
 
     testImplementation("junit:junit:4.13.2")
+    testImplementation("io.mockk:mockk:1.13.9")
+    testImplementation("com.google.truth:truth:1.4.2")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 }
-dependencies { testImplementation("junit:junit:4.13.2") }
