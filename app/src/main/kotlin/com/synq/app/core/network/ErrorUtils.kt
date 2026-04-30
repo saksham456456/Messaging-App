@@ -9,6 +9,6 @@ fun Throwable.toUserFriendlyMessage(): String {
         is UnknownHostException -> "No internet connection. Please check your network and try again."
         is ConnectException -> "Unable to connect to the server. Please try again later."
         is SocketTimeoutException -> "The connection timed out. Please try again."
-        else -> this.localizedMessage ?: "An unexpected error occurred."
+        else -> "An unexpected error occurred."
     }
 }
