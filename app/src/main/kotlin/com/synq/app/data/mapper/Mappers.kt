@@ -5,6 +5,7 @@ import com.synq.app.data.local.entity.MessageEntity
 import com.synq.app.data.remote.dto.ChatDto
 import com.synq.app.data.remote.dto.MessageDto
 import com.synq.app.domain.model.Chat
+import com.synq.app.core.util.SynqLog
 import com.synq.app.domain.model.Message
 import com.synq.app.domain.model.MessageStatus
 import com.synq.app.domain.model.MessageType
@@ -51,11 +52,13 @@ fun MessageEntity.toDomain() = Message(
 private fun String.toMessageType(): MessageType = try {
     MessageType.valueOf(this)
 } catch (e: Exception) {
+    SynqLog.e("Mappers", "Failed to parse MessageType: $this", e)
     MessageType.UNKNOWN
 }
 
 private fun String.toMessageStatus(): MessageStatus = try {
     MessageStatus.valueOf(this)
 } catch (e: Exception) {
+    SynqLog.e("Mappers", "Failed to parse MessageStatus: $this", e)
     MessageStatus.UNKNOWN
 }

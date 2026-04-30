@@ -51,19 +51,19 @@ class ChatRepositoryImpl @Inject constructor(
         val currentUserId = tokenManager.getUserId() ?: "unknown"
         val tempMessageId = UUID.randomUUID().toString()
 
-        val pendingMessage = MessageEntity(
-            id = tempMessageId,
-            chatId = chatId,
-            senderId = currentUserId,
-            content = content,
-            type = "TEXT",
-            status = "PENDING",
-            createdAt = System.currentTimeMillis(),
-            isPending = true
-        )
-        messageDao.insertMessage(pendingMessage)
-
         try {
+            val pendingMessage = MessageEntity(
+                id = tempMessageId,
+                chatId = chatId,
+                senderId = currentUserId,
+                content = content,
+                type = "TEXT",
+                status = "PENDING",
+                createdAt = System.currentTimeMillis(),
+                isPending = true
+            )
+            messageDao.insertMessage(pendingMessage)
+
             val response = chatApi.sendMessage(chatId, SendMessageRequestDto(content, "TEXT"))
             if (response.isSuccessful && response.body() != null) {
                 messageDao.clearMessages(tempMessageId) // delete pending
@@ -71,10 +71,14 @@ class ChatRepositoryImpl @Inject constructor(
                 Result.success(Unit)
             } else {
                 messageDao.updateMessageStatus(tempMessageId, "FAILED")
-                Result.failure(Exception("Failed: ${response.message()}"))
+                Result.failure(Exception("Failed to send message."))
             }
         } catch (e: Exception) {
-            messageDao.updateMessageStatus(tempMessageId, "FAILED")
+            try {
+                messageDao.updateMessageStatus(tempMessageId, "FAILED")
+            } catch (inner: Exception) {
+                SynqLog.e("ChatRepository", "Failed to update status on error", inner)
+            }
             Result.failure(Exception(e.toUserFriendlyMessage()))
         }
     }
@@ -103,7 +107,7 @@ class ChatRepositoryImpl @Inject constructor(
                 chatDao.insertChat(newChat.toEntity())
                 Result.success(newChat.id)
             } else {
-                Result.failure(Exception("Failed to start chat: ${response.message()}"))
+                Result.failure(Exception("Failed to start chat."))
             }
         } catch (e: Exception) {
             Result.failure(Exception(e.toUserFriendlyMessage()))
