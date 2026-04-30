@@ -34,7 +34,14 @@ class ChatRepositoryImpl @Inject constructor(
     private val tokenManager: TokenManager
 ) : ChatRepository {
 
-    override fun getChats(): Flow<PagingData<Chat>> = Pager(PagingConfig(pageSize = 20)) { chatDao.getChats() }.flow.map { it.map { c -> c.toDomain() } }
+    override fun getChats(): Flow<PagingData<Chat>> {
+        return Pager(
+            config = PagingConfig(pageSize = 20),
+            pagingSourceFactory = { chatDao.getChats() }
+        ).flow.map { pagingData ->
+            pagingData.map { it.toDomain() }
+        }
+    }
 
     @OptIn(ExperimentalPagingApi::class)
     override fun getMessages(chatId: String): Flow<PagingData<Message>> {
