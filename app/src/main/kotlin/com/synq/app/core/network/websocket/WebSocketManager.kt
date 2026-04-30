@@ -36,7 +36,10 @@ class WebSocketManager @Inject constructor(
         isIntentionallyDisconnected = false
 
         val token = tokenManager.getToken() ?: return
-        val request = Request.Builder().url("wss://api.synq.app/ws?token=$token").build()
+        val request = Request.Builder()
+            .url("wss://api.synq.app/ws")
+            .addHeader("Authorization", "Bearer $token")
+            .build()
 
         webSocket = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
