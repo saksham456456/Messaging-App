@@ -71,7 +71,7 @@ class ChatRepositoryImpl @Inject constructor(
                 Result.success(Unit)
             } else {
                 messageDao.updateMessageStatus(tempMessageId, "FAILED")
-                Result.failure(Exception("Failed: ${response.message()}"))
+                Result.failure(Exception("Failed to send message."))
             }
         } catch (e: Exception) {
             messageDao.updateMessageStatus(tempMessageId, "FAILED")
@@ -103,7 +103,7 @@ class ChatRepositoryImpl @Inject constructor(
                 chatDao.insertChat(newChat.toEntity())
                 Result.success(newChat.id)
             } else {
-                Result.failure(Exception("Failed to start chat: ${response.message()}"))
+                Result.failure(Exception("Failed to start chat."))
             }
         } catch (e: Exception) {
             Result.failure(Exception(e.toUserFriendlyMessage()))

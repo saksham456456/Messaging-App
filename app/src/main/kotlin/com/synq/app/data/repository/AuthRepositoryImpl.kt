@@ -25,7 +25,7 @@ class AuthRepositoryImpl @Inject constructor(
             if (response.isSuccessful) {
                 AppResult.Success(response.body()?.success ?: false)
             } else {
-                AppResult.Error("Failed: ${response.message()}")
+                AppResult.Error("Failed to send OTP.")
             }
         } catch (e: Exception) {
             AppResult.Error(e.toUserFriendlyMessage(), e)
@@ -42,7 +42,7 @@ class AuthRepositoryImpl @Inject constructor(
                 tokenManager.setProfileComplete(false)
                 AppResult.Success(Unit)
             } else {
-                AppResult.Error("Failed: ${response.message()}")
+                AppResult.Error("Failed to verify OTP.")
             }
         } catch (e: Exception) {
             AppResult.Error(e.toUserFriendlyMessage(), e)
@@ -56,7 +56,7 @@ class AuthRepositoryImpl @Inject constructor(
                 tokenManager.setProfileComplete(true)
                 AppResult.Success(Unit)
             } else {
-                AppResult.Error("Failed to save profile: ${response.message()}")
+                AppResult.Error("Failed to save profile.")
             }
         } catch (e: Exception) {
             AppResult.Error(e.toUserFriendlyMessage(), e)
