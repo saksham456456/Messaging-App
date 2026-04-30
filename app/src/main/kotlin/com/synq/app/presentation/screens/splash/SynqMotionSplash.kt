@@ -16,6 +16,9 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
+import androidx.compose.runtime.snapshotFlow
 
 @Composable
 fun SynqMotionSplash(
@@ -83,10 +86,8 @@ fun SynqMotionSplash(
         delay(800) // Minimum time to show the logo
 
         // Wait until real initialization is done (or timeout to prevent infinite hangs)
-        var waitTime = 0
-        while (!isAppReady() && waitTime < 3000) {
-            delay(100)
-            waitTime += 100
+        withTimeoutOrNull(3000) {
+            snapshotFlow { isAppReady() }.first { it }
         }
 
         onSplashFinished()

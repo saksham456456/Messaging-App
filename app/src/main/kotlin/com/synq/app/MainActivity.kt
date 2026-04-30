@@ -9,6 +9,9 @@ import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.navigation.compose.rememberNavController
 import com.synq.app.core.network.TokenManager
 import com.synq.app.core.theme.SynqTheme
@@ -25,7 +28,7 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
 
     // We consider the app "ready" once we've securely checked the token and biometric status
     private var isAuthChecked = false
-    private var isAuthenticated = false
+    private var isAuthenticated by mutableStateOf(false)
     private var isBiometricPromptShowing = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,7 +52,6 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
     }
 
     private fun loadUi() {
-        if (!isAuthenticated) return
         setContent {
             SynqTheme {
                 val navController = rememberNavController()
@@ -90,7 +92,6 @@ class MainActivity : androidx.fragment.app.FragmentActivity() {
                     super.onAuthenticationSucceeded(result)
                     isAuthenticated = true
                     isBiometricPromptShowing = false
-                    loadUi()
                 }
 
                 override fun onAuthenticationFailed() {
