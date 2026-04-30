@@ -70,4 +70,9 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.5.0")
     implementation("androidx.security:security-crypto-ktx:1.1.0-alpha06")
     implementation("androidx.biometric:biometric:1.2.0-alpha05")
+
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("io.mockk:mockk:1.13.9")
+    testImplementation("com.google.truth:truth:1.4.2")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
 }
