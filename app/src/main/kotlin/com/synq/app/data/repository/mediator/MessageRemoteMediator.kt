@@ -8,6 +8,7 @@ import com.synq.app.data.local.dao.MessageDao
 import com.synq.app.data.local.entity.MessageEntity
 import com.synq.app.data.mapper.toEntity
 import com.synq.app.data.remote.api.ChatApi
+import com.synq.app.core.util.SynqLog
 import retrofit2.HttpException
 import java.io.IOException
 
@@ -59,8 +60,10 @@ class MessageRemoteMediator(
                 MediatorResult.Error(HttpException(response))
             }
         } catch (e: IOException) {
+            SynqLog.e("MessageRemoteMediator", "IOException while loading messages", e)
             MediatorResult.Error(e)
         } catch (e: HttpException) {
+            SynqLog.e("MessageRemoteMediator", "HttpException while loading messages", e)
             MediatorResult.Error(e)
         }
     }
