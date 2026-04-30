@@ -30,6 +30,7 @@ class WebSocketManager @Inject constructor(
     private val scope = CoroutineScope(Dispatchers.IO)
     private var reconnectJob: Job? = null
     private var isIntentionallyDisconnected = false
+    private val payloadAdapter = moshi.adapter(WsPayload::class.java)
 
     fun connect() {
         if (webSocket != null) return
@@ -85,7 +86,7 @@ class WebSocketManager @Inject constructor(
     private fun handleIncomingMessage(text: String) {
         scope.launch {
             try {
-                val payload = moshi.adapter(WsPayload::class.java).fromJson(text) ?: return@launch
+                val payload = payloadAdapter.fromJson(text) ?: return@launch
 
                 when (payload) {
                     is WsPayload.NewMessage -> {
