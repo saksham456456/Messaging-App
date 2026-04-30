@@ -30,11 +30,11 @@ class ErrorUtilsTest {
     }
 
     @Test
-    fun `toUserFriendlyMessage returns localized message for generic Exception`() {
+    fun `toUserFriendlyMessage returns fallback string for generic Exception`() {
         val errorMessage = "Something went wrong"
         val exception = Exception(errorMessage)
         val result = exception.toUserFriendlyMessage()
-        assertEquals(errorMessage, result)
+        assertEquals("An unexpected error occurred.", result)
     }
 
     @Test

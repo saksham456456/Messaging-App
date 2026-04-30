@@ -1,12 +1,29 @@
 package com.synq.app.data.mapper
 
+import android.util.Log
 import com.synq.app.data.local.entity.MessageEntity
 import com.synq.app.domain.model.MessageStatus
 import com.synq.app.domain.model.MessageType
+import io.mockk.every
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Before
 import org.junit.Test
 
 class MappersTest {
+
+    @Before
+    fun setup() {
+        mockkStatic(Log::class)
+        every { Log.e(any(), any(), any()) } returns 0
+    }
+
+    @After
+    fun teardown() {
+        unmockkAll()
+    }
 
     @Test
     fun `MessageEntity toDomain with valid status and type maps correctly`() {
