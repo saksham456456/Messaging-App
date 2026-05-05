@@ -22,10 +22,11 @@ fun SynqMotionSplash(
     isAppReady: () -> Boolean,
     onSplashFinished: () -> Unit
 ) {
-    // Colors based on brand guidelines
-    val bgColor = Color(0xFF0B0B0F)
-    val accentBlue = Color(0xFF4DA6FF)
-    val accentCyan = Color(0xFF00E5FF)
+    // Colors based on brand guidelines from new logo
+    val bgColor = Color(0xFF0F172A) // Deep Slate
+    val accentBlue = Color(0xFF2563EB) // Blue 600
+    val accentCyan = Color(0xFF06B6D4) // Cyan 500
+    val accentGreen = Color(0xFF10B981) // Emerald 500
 
     // Animation states
     val transition = rememberInfiniteTransition(label = "SplashTransition")

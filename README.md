@@ -1,4 +1,4 @@
-# Synq Messenger
+# Synq
 
 Synq is a modern, fast, and reliable Android chat application built with Kotlin and Jetpack Compose. It prioritizes offline-first functionality, real-time message synchronization, and a smooth, minimalist user experience.
 

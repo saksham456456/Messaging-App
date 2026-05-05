@@ -20,6 +20,10 @@ class AuthRepositoryImpl @Inject constructor(
 ) : AuthRepository {
 
     override suspend fun requestOtp(phoneNumber: String): AppResult<Boolean> = withContext(Dispatchers.IO) {
+        // Mock success for testing if phone number starts with +123
+        if (phoneNumber.startsWith("+123")) {
+            return@withContext AppResult.Success(true)
+        }
         try {
             val response = authApi.requestOtp(OtpRequestDto(phoneNumber))
             if (response.isSuccessful) {
@@ -33,6 +37,13 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun verifyOtp(phoneNumber: String, otp: String): AppResult<Unit> = withContext(Dispatchers.IO) {
+        // Mock success for testing if phone number starts with +123 and OTP is 1234
+        if (phoneNumber.startsWith("+123") && otp == "1234") {
+            tokenManager.saveToken("mock_token")
+            tokenManager.saveUserId("mock_user_id")
+            tokenManager.setProfileComplete(false)
+            return@withContext AppResult.Success(Unit)
+        }
         try {
             val response = authApi.verifyOtp(VerifyRequestDto(phoneNumber, otp))
             if (response.isSuccessful && response.body() != null) {
@@ -50,6 +61,11 @@ class AuthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateProfile(name: String): AppResult<Unit> = withContext(Dispatchers.IO) {
+        // Mock success if using mock token
+        if (tokenManager.getToken() == "mock_token") {
+            tokenManager.setProfileComplete(true)
+            return@withContext AppResult.Success(Unit)
+        }
         try {
             val response = userApi.updateProfile(UpdateProfileRequestDto(name))
             if (response.isSuccessful) {

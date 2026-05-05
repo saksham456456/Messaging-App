@@ -19,30 +19,32 @@ fun ProfileSetupScreen(viewModel: ProfileSetupViewModel = hiltViewModel(), onPro
         if (uiState.isSuccess) onProfileComplete()
     }
 
-    Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-            Text("Your Profile", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = TealAccent, modifier = Modifier.padding(bottom = 8.dp))
-            Text("What should people call you?", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 32.dp))
+    Surface(color = MaterialTheme.colorScheme.background) {
+        Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                Text("Your Profile", fontSize = 32.sp, fontWeight = FontWeight.Bold, color = TealAccent, modifier = Modifier.padding(bottom = 8.dp))
+                Text("What should people call you?", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 32.dp))
 
-            OutlinedTextField(
-                value = uiState.name,
-                onValueChange = viewModel::updateName,
-                label = { Text("Display Name") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-            Button(onClick = viewModel::saveProfile, modifier = Modifier.fillMaxWidth(), enabled = !uiState.isLoading) {
-                Text("Start Chatting")
-            }
+                OutlinedTextField(
+                    value = uiState.name,
+                    onValueChange = viewModel::updateName,
+                    label = { Text("Display Name") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Button(onClick = viewModel::saveProfile, modifier = Modifier.fillMaxWidth(), enabled = !uiState.isLoading) {
+                    Text("Start Chatting")
+                }
 
-            if (uiState.isLoading) {
-                Spacer(modifier = Modifier.height(16.dp))
-                CircularProgressIndicator()
-            }
-            uiState.errorMessage?.let { error ->
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = error, color = MaterialTheme.colorScheme.error)
+                if (uiState.isLoading) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    CircularProgressIndicator()
+                }
+                uiState.errorMessage?.let { error ->
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(text = error, color = MaterialTheme.colorScheme.error)
+                }
             }
         }
     }
